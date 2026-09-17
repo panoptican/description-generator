@@ -136,7 +136,7 @@ function initPlugin(scope: Scope) {
   const currentPageName = figma.currentPage.name
 
   showUI({
-    width: 675,
+    width: 608,
     height: 800
   }, { scope, currentPageName })
 
