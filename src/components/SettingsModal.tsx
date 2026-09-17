@@ -108,7 +108,7 @@ export function SettingsModal({
               <Text>Include component image in prompt</Text>
             </Checkbox>
             <div className={styles.optionHelp}>
-              <Text><Muted>Generation sends component names, properties, variant context, and your prompt to the Description Generator service, which forwards them to Google Gemini. Enable this to also send a PNG. Icon mode always attempts to include a PNG, even when this is off. The service counts descriptions per Figma user for the free and Pro limits.</Muted></Text>
+              <Text><Muted>Generation sends component names, properties, variant context, and your prompt to the Description Generator service, which forwards them to Google Gemini. Enable this to also send a PNG. Icon mode always attempts to include a PNG, even when this is off. Free requests use 1 credit for text only or 2 when an image is sent. Pro requests use 1 description.</Muted></Text>
             </div>
           </div>
           <div>

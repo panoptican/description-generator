@@ -152,7 +152,7 @@ export function ComponentRow({
   const generationLabel = isPending ? 'Generating…' : isCoolingDown && wasGeneratedThisSession ? '✓ Generated' : isEmpty ? 'Generate description' : 'Regenerate'
   const generationTitle = isCoolingDown
     ? 'Just generated. Available again in a moment.'
-    : `${isEmpty ? 'Generate' : 'Replace'} this description. Uses 1 description.${component.type === 'VARIANT' ? ' Includes sibling names as text context; images of siblings are not sent.' : ''}`
+    : `${isEmpty ? 'Generate' : 'Replace'} this description. Free requests use 1 credit for text or 2 with an image.${component.type === 'VARIANT' ? ' Includes sibling names as text context; images of siblings are not sent.' : ''}`
 
   function handleTitleActivation(e: MouseEvent) {
     e.stopPropagation()

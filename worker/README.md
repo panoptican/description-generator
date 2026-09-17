@@ -75,7 +75,7 @@ You need a Cloudflare account, `wrangler` on your PATH, a Gemini API key from [G
 
 ## Limits and manual support
 
-Free users receive 1,000 descriptions for the lifetime of their Figma account. Pro costs $10 per month, or $96 per year, and includes 10,000 descriptions per UTC calendar month. Trials count as Pro. Counts include icon names and variants; failed Gemini requests are released and do not count.
+Free users receive 1,000 lifetime credits per Figma account. Text-only requests use 1 credit; requests that send an image use 2, including icon mode when its image export succeeds. Pro costs $10 per month, or $96 per year, and includes 10,000 descriptions per UTC calendar month, with image requests still counting as one description. Trials count as Pro. Counts include icon names and variants; failed Gemini requests are released and do not count.
 
 To inspect a user's usage:
 

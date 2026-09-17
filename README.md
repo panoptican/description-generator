@@ -2,7 +2,7 @@
 
 Edit Figma component descriptions in one place, or use AI to write a first pass. Works with standalone components, component sets, and variants across a page or an entire file. No account or API key is needed.
 
-The service includes 1,000 free descriptions per Figma user for life. Pro is $10/month or $96/year and includes 10,000 descriptions per UTC calendar month; the default seven-day trial counts as Pro.
+The service includes 1,000 lifetime credits per free Figma user. Text-only requests use 1 credit; requests with an image use 2. Pro is $10/month or $96/year and includes 10,000 descriptions per UTC calendar month; the default seven-day trial counts as Pro.
 
 ## What it does
 

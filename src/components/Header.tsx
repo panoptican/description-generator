@@ -84,7 +84,7 @@ export function Header({
   const usageTitle = usage?.plan === 'pro' && usage.resetsAt
     ? `Pro: ${usage.used.toLocaleString('en-US')} of ${usage.limit.toLocaleString('en-US')} descriptions used this month. Resets ${new Date(usage.resetsAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}.`
     : usage?.plan === 'free'
-      ? `Free: ${usage.used.toLocaleString('en-US')} of ${usage.limit.toLocaleString('en-US')} lifetime descriptions used.`
+      ? `Free: ${usage.used.toLocaleString('en-US')} of ${usage.limit.toLocaleString('en-US')} lifetime credits used. Text uses 1 credit; requests with an image use 2.`
       : usageState.status === 'error' || usageState.status === 'unavailable' ? usageState.message : 'Loading current usage.'
   const canUpgrade = usage?.plan === 'free'
 
