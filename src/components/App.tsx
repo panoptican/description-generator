@@ -212,12 +212,16 @@ export function App({ scope, currentPageName }: AppProps) {
     [settings, iconOverrides, payments, images]
   )
 
-  const handleDisableIcon = useCallback((componentId: string) => {
+  const handleToggleIcon = useCallback((componentId: string) => {
     if (!components.find((component) => component.id === componentId)?.isIcon) return
 
     setIconOverrides((prev) => {
-      if (prev[componentId] === false) return prev
-      const newOverrides = { ...prev, [componentId]: false }
+      const newOverrides = { ...prev }
+      if (prev[componentId] === false) {
+        delete newOverrides[componentId]
+      } else {
+        newOverrides[componentId] = false
+      }
 
       // BUG-003 fix: persist icon overrides to settings
       const newSettings = { ...settings, iconOverrides: newOverrides }
@@ -428,7 +432,7 @@ export function App({ scope, currentPageName }: AppProps) {
         isGenerating={isGenerating}
         rowErrors={rowErrors}
         iconOverrides={iconOverrides}
-        onDisableIcon={handleDisableIcon}
+        onToggleIcon={handleToggleIcon}
         generatedThisSession={generatedThisSession}
         coolingDownIds={cooldown.ids}
         coolingDownSets={coolingDownSets}

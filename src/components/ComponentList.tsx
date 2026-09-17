@@ -34,7 +34,7 @@ interface ComponentListProps {
   rowErrors: Record<string, GenerationError | undefined>
   onSelect: (id: string) => void
   iconOverrides: Record<string, boolean>
-  onDisableIcon: (id: string) => void
+  onToggleIcon: (id: string) => void
   generatedThisSession: Set<string>
   coolingDownIds: Set<string>
   coolingDownSets: Set<string>
@@ -57,7 +57,7 @@ export function ComponentList({
   rowErrors,
   onSelect,
   iconOverrides,
-  onDisableIcon,
+  onToggleIcon,
   generatedThisSession,
   coolingDownIds,
   coolingDownSets,
@@ -181,7 +181,7 @@ export function ComponentList({
         isExpanded={expandedRows.has(component.id)}
         onToggleExpand={handleToggleExpand}
         isIcon={isIconModeEnabled(component.isIcon, iconOverrides[component.id])}
-        onDisableIcon={onDisableIcon}
+        onToggleIcon={onToggleIcon}
         wasGeneratedThisSession={generatedThisSession.has(component.id)}
         isCoolingDown={coolingDownIds.has(component.id)}
         isSetCoolingDown={coolingDownSets.has(component.id)}

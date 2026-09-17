@@ -31,7 +31,7 @@ function makeRow(overrides: Partial<RowProps> = {}) {
     onRevert: vi.fn(),
     onSelect: vi.fn(),
     onToggleExpand: vi.fn(),
-    onDisableIcon: vi.fn(),
+    onToggleIcon: vi.fn(),
     onUpgrade: vi.fn(),
     isPending: false,
     ...overrides,
@@ -149,23 +149,31 @@ describe('focused row shortcuts', () => {
 })
 
 describe('direct row controls', () => {
-  it.each([true, false])('turns off icon mode without selecting or expanding the row, expanded=%s', (isExpanded) => {
-    const { props, row } = makeRow({ isExpanded, isIcon: true })
-    const button = findNode(row, (node) => node.props?.['aria-label'] === 'Turn off icon mode for Size=Small')
+  it.each([
+    { isExpanded: true, isIcon: true },
+    { isExpanded: false, isIcon: true },
+    { isExpanded: true, isIcon: false },
+    { isExpanded: false, isIcon: false },
+  ])('toggles detected icon mode without selecting or expanding the row: %j', ({ isExpanded, isIcon }) => {
+    const component = { ...makeRow().props.component, isIcon: true }
+    const { props, row } = makeRow({ component, isExpanded, isIcon })
+    const button = findNode(row, (node) => node.props?.['aria-label'] === 'Icon mode for Size=Small')
+    expect(button.props['aria-pressed']).toBe(isIcon)
+    expect(button.props.title).toBe(`Turn ${isIcon ? 'off' : 'on'} icon mode for Size=Small`)
     const focus = vi.fn()
     row.ref({ querySelector: () => ({ focus }) })
     const click = { stopPropagation: vi.fn() }
     button.props.onClick(click)
-    expect(props.onDisableIcon).toHaveBeenCalledExactlyOnceWith('variant-a')
+    expect(props.onToggleIcon).toHaveBeenCalledExactlyOnceWith('variant-a')
     expect(props.onSelect).not.toHaveBeenCalled()
     expect(props.onToggleExpand).not.toHaveBeenCalled()
     expect(click.stopPropagation).toHaveBeenCalledOnce()
-    expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+    expect(focus).not.toHaveBeenCalled()
   })
 
-  it.each([true, false])('has no icon action when icon mode is off, expanded=%s', (isExpanded) => {
+  it.each([true, false])('has no icon action for components that are not detected icons, expanded=%s', (isExpanded) => {
     const { row } = makeRow({ isExpanded, isIcon: false })
-    expect(findNode(row, (node) => node.props?.['aria-label'] === 'Turn off icon mode for Size=Small')).toBeUndefined()
+    expect(findNode(row, (node) => node.props?.['aria-label'] === 'Icon mode for Size=Small')).toBeUndefined()
     expect(findNode(row, (node) => node.type === 'input' && node.props.type === 'checkbox')).toBeUndefined()
   })
 })

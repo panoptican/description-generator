@@ -25,7 +25,7 @@ interface ComponentRowProps {
   isExpanded: boolean
   onToggleExpand: (id: string) => void
   isIcon: boolean
-  onDisableIcon: (id: string) => void
+  onToggleIcon: (id: string) => void
   wasGeneratedThisSession: boolean
   isCoolingDown?: boolean
   isSetCoolingDown?: boolean
@@ -56,7 +56,7 @@ export function ComponentRow({
   isExpanded,
   onToggleExpand,
   isIcon,
-  onDisableIcon,
+  onToggleIcon,
   wasGeneratedThisSession,
   isCoolingDown = false,
   isSetCoolingDown = false,
@@ -184,18 +184,18 @@ export function ComponentRow({
   }
 
   function renderIconButton() {
-    if (!isIcon) return null
+    if (!component.isIcon) return null
 
     return (
       <button
         type="button"
         className={styles.rowIconButton}
-        aria-label={`Turn off icon mode for ${component.name}`}
-        title={`Turn off icon mode for ${component.name}`}
+        aria-label={`Icon mode for ${component.name}`}
+        aria-pressed={isIcon}
+        title={`Turn ${isIcon ? 'off' : 'on'} icon mode for ${component.name}`}
         onClick={(e) => {
           e.stopPropagation()
-          rowElementRef.current?.querySelector<HTMLButtonElement>('[data-row-toggle]')?.focus({ preventScroll: true })
-          onDisableIcon(component.id)
+          onToggleIcon(component.id)
         }}
       >
         Icon
@@ -259,7 +259,7 @@ export function ComponentRow({
           {isEmpty ? '' : '✓'}
         </span>
 
-        {(isIcon || variantsControl) && <div className={styles.rowActions}>{renderIconButton()}{variantsControl}</div>}
+        {(component.isIcon || variantsControl) && <div className={styles.rowActions}>{renderIconButton()}{variantsControl}</div>}
       </div>
     )
   }
@@ -284,7 +284,7 @@ export function ComponentRow({
           <span title={component.name}>{component.name}</span>
           {relationshipLabel && <span className={styles.rowSetLabel}>{relationshipLabel}</span>}
         </button>
-        {(isIcon || variantsControl) && <div className={styles.rowActions}>{renderIconButton()}{variantsControl}</div>}
+        {(component.isIcon || variantsControl) && <div className={styles.rowActions}>{renderIconButton()}{variantsControl}</div>}
       </div>
 
       <div className={styles.rowEditor}>
