@@ -22,6 +22,25 @@ describe('quota', () => {
     expect(blocked).toEqual({ ok: false, usage: { plan: 'free', used: 1_000, limit: 1_000, period: null, resetsAt: null } })
   })
 
+  it('charges two free credits for an image and still allows text with one credit left', async () => {
+    const db = createTestDatabase()
+    await seed(db, 'free-image', 'free', { lifetime_count: 997 })
+    const image = await reserve(db, 'free-image', 'free', limits, now, true)
+    expect(image).toMatchObject({ ok: true, usage: { used: 999, limit: 1_000 } })
+    expect((await reserve(db, 'free-image', 'free', limits, now, true)).ok).toBe(false)
+    expect((await reserve(db, 'free-image', 'free', limits, now)).usage.used).toBe(1_000)
+    if (!image.ok) throw new Error('Reservation failed')
+    await release(db, image.reservation)
+    expect((await getUsage(db, 'free-image', 'free', limits, now)).used).toBe(998)
+  })
+
+  it('keeps Pro image requests at one monthly description', async () => {
+    const db = createTestDatabase()
+    await seed(db, 'pro-image', 'pro')
+    expect((await reserve(db, 'pro-image', 'pro', limits, now, true)).usage).toMatchObject({ used: 1, limit: 10_000 })
+    expect((await getUsage(db, 'pro-image', 'free', limits, now)).used).toBe(1)
+  })
+
   it('resets Pro usage when the UTC month changes', async () => {
     const db = createTestDatabase()
     await seed(db, 'pro', 'pro', { period: '2026-08', period_count: 10_000, lifetime_count: 10_000 })

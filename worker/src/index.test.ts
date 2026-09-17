@@ -108,7 +108,7 @@ describe('generation service', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
       description: 'Displays a list of actions.',
-      usage: { plan: 'free', used: 1, limit: 1000, period: null, resetsAt: null }
+      usage: { plan: 'free', used: 2, limit: 1000, period: null, resetsAt: null }
     })
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
     const [url, request] = fetch.mock.calls[0] as [string, RequestInit]
@@ -126,6 +126,28 @@ describe('generation service', () => {
     expect(logged).toContain('"totalTokens":312')
     expect(logged).not.toContain('Describe Button')
     expect(logged).not.toContain('Displays')
+  })
+
+  it('releases both free credits when an image generation fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(geminiResponse({ error: { message: 'bad key' } }, 400)))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await worker.fetch(post({ prompt: 'Describe', imageBase64: 'aGVsbG8=' }), env)
+    expect(response.status).toBe(502)
+    expect(await env.DB.prepare('SELECT lifetime_count, period_count FROM users WHERE user_id = ?1').bind('tester').first()).toEqual({ lifetime_count: 0, period_count: 0 })
+  })
+
+  it('blocks an image with one free credit left while allowing text', async () => {
+    const fetch = vi.fn().mockResolvedValue(geminiResponse({ candidates: [{ content: { parts: [{ text: 'Done.' }] } }] }))
+    vi.stubGlobal('fetch', fetch)
+    await worker.fetch(new Request('https://service.test/usage', { method: 'POST', body: JSON.stringify({ paymentToken: 'dev:almost-full:free' }) }), env)
+    await env.DB.prepare('UPDATE users SET lifetime_count = 999 WHERE user_id = ?1').bind('almost-full').run()
+    const blocked = await worker.fetch(post({ prompt: 'Describe', imageBase64: 'aGVsbG8=', paymentToken: 'dev:almost-full:free' }), env)
+    expect(blocked.status).toBe(402)
+    expect(await blocked.json()).toMatchObject({ error: expect.stringContaining('2 free credits, but you have 1 left'), code: 'quota_exceeded', usage: { used: 999, limit: 1000 } })
+    expect(fetch).not.toHaveBeenCalled()
+    const text = await worker.fetch(post({ prompt: 'Describe', paymentToken: 'dev:almost-full:free' }), env)
+    expect(text.status).toBe(200)
+    expect(await text.json()).toMatchObject({ usage: { used: 1000 } })
   })
 
   it('applies the per-IP rate limit before parsing', async () => {

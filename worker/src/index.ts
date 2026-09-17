@@ -106,7 +106,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   const checked = await checkIdentity(parsed.paymentToken, env)
   if ('response' in checked) return checked.response
   const configuredLimits = getLimits(env)
-  const { value, usage } = await withReservation(env.DB!, checked.identity, configuredLimits, () => generateText(parsed, env.GEMINI_API_KEY!))
+  const { value, usage } = await withReservation(env.DB!, checked.identity, configuredLimits, Boolean(parsed.imageBase64), () => generateText(parsed, env.GEMINI_API_KEY!))
   console.log(JSON.stringify({ event: 'generate', ...checked.identity, hasImage: Boolean(parsed.imageBase64), ...value.tokenCounts }))
   return json({ description: value.description, usage })
 }
@@ -119,7 +119,9 @@ export default {
       if (failure instanceof QuotaExceededError) {
         const usage = failure.usage
         const message = usage.plan === 'free'
-          ? `You've used all ${usage.limit.toLocaleString('en-US')} free descriptions. Upgrade to Pro for 10,000 a month.`
+          ? usage.used < usage.limit
+            ? `An image request uses ${failure.cost} free credits, but you have ${usage.limit - usage.used} left. Send text only or upgrade to Pro.`
+            : `You've used all ${usage.limit.toLocaleString('en-US')} free credits. Upgrade to Pro for 10,000 descriptions a month.`
           : `You've used this month's ${usage.limit.toLocaleString('en-US')} descriptions. Your limit resets on ${new Date(usage.resetsAt!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}.`
         console.log(JSON.stringify({ event: 'quota_exceeded', userId: failure.userId, plan: usage.plan }))
         return error(message, 402, 'quota_exceeded', {}, { usage })

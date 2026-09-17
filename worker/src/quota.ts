@@ -13,10 +13,11 @@ interface UserRow {
 export interface Reservation {
   userId: string
   period: string
+  lifetimeCost: number
 }
 
 export class QuotaExceededError extends Error {
-  constructor(public readonly usage: Usage, public readonly userId: string) {
+  constructor(public readonly usage: Usage, public readonly userId: string, public readonly cost: number) {
     super('Description limit reached')
   }
 }
@@ -51,24 +52,25 @@ function usageFromRow(row: Pick<UserRow, 'lifetime_count' | 'period' | 'period_c
   }
 }
 
-export async function reserve(db: D1Database, userId: string, plan: Plan, limits: Limits, now: number | Date = Date.now()): Promise<{ ok: true; usage: Usage; reservation: Reservation } | { ok: false; usage: Usage }> {
+export async function reserve(db: D1Database, userId: string, plan: Plan, limits: Limits, now: number | Date = Date.now(), hasImage = false): Promise<{ ok: true; usage: Usage; reservation: Reservation } | { ok: false; usage: Usage }> {
   const period = currentPeriod(now)
   const updatedAt = new Date(now instanceof Date ? now.getTime() : now > 1_000_000_000_000 ? now : now * 1000).toISOString()
+  const lifetimeCost = plan === 'free' && hasImage ? 2 : 1
   const result = await db.prepare(`UPDATE users SET
   period_count = CASE WHEN period = ?1 THEN period_count + 1 ELSE 1 END,
   period = ?1,
-  lifetime_count = lifetime_count + 1,
+  lifetime_count = lifetime_count + ?7,
   updated_at = ?2
 WHERE user_id = ?3 AND (
   (?4 = 1 AND (CASE WHEN period = ?1 THEN period_count ELSE 0 END) < COALESCE(pro_limit_override, ?6))
   OR
-  (?4 = 0 AND lifetime_count < COALESCE(free_limit_override, ?5))
+  (?4 = 0 AND lifetime_count + ?7 <= COALESCE(free_limit_override, ?5))
 )
 RETURNING lifetime_count, period, period_count, free_limit_override, pro_limit_override;`)
-    .bind(period, updatedAt, userId, plan === 'pro' ? 1 : 0, limits.freeLifetimeLimit, limits.proMonthlyLimit)
+    .bind(period, updatedAt, userId, plan === 'pro' ? 1 : 0, limits.freeLifetimeLimit, limits.proMonthlyLimit, lifetimeCost)
     .first<UserRow>()
 
-  if (result) return { ok: true, usage: usageFromRow(result, plan, limits, period), reservation: { userId, period } }
+  if (result) return { ok: true, usage: usageFromRow(result, plan, limits, period), reservation: { userId, period, lifetimeCost } }
   return { ok: false, usage: await getUsage(db, userId, plan, limits, now) }
 }
 
@@ -87,16 +89,16 @@ export async function getUsage(db: D1Database, userId: string, plan: Plan, limit
 
 export async function release(db: D1Database, reservation: Reservation): Promise<void> {
   await db.prepare(`UPDATE users SET
-  lifetime_count = MAX(lifetime_count - 1, 0),
+  lifetime_count = MAX(lifetime_count - ?3, 0),
   period_count = CASE WHEN period = ?2 THEN MAX(period_count - 1, 0) ELSE period_count END
 WHERE user_id = ?1`)
-    .bind(reservation.userId, reservation.period)
+    .bind(reservation.userId, reservation.period, reservation.lifetimeCost)
     .run()
 }
 
-export async function withReservation<T>(db: D1Database, identity: { userId: string; plan: Plan }, limits: Limits, operation: () => Promise<T>): Promise<{ value: T; usage: Usage }> {
-  const result = await reserve(db, identity.userId, identity.plan, limits)
-  if (!result.ok) throw new QuotaExceededError(result.usage, identity.userId)
+export async function withReservation<T>(db: D1Database, identity: { userId: string; plan: Plan }, limits: Limits, hasImage: boolean, operation: () => Promise<T>): Promise<{ value: T; usage: Usage }> {
+  const result = await reserve(db, identity.userId, identity.plan, limits, Date.now(), hasImage)
+  if (!result.ok) throw new QuotaExceededError(result.usage, identity.userId, identity.plan === 'free' && hasImage ? 2 : 1)
 
   try {
     const value = await operation()
