@@ -29,3 +29,4 @@ declare const styles: {
   readonly "variantsToggle": string;
 };
 export = styles;
+
