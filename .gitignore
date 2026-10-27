@@ -19,3 +19,9 @@ CLAUDE.md
 logs/
 .wrangler/
 marketing/
+
+# Local agent tooling
+.agents/
+.forge/
+.pi/
+skills-lock.json
