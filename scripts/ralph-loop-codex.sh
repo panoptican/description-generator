@@ -17,7 +17,6 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_DIR/logs"
-CONSTITUTION="$PROJECT_DIR/.specify/memory/constitution.md"
 RLM_DIR="$PROJECT_DIR/rlm"
 RLM_TRACE_DIR="$RLM_DIR/trace"
 RLM_QUERIES_DIR="$RLM_DIR/queries"
@@ -46,14 +45,6 @@ NC='\033[0m'
 
 mkdir -p "$LOG_DIR"
 
-# Check constitution for YOLO setting
-YOLO_ENABLED=true
-if [[ -f "$CONSTITUTION" ]]; then
-    if grep -q "YOLO Mode.*DISABLED" "$CONSTITUTION" 2>/dev/null; then
-        YOLO_ENABLED=false
-    fi
-fi
-
 show_help() {
     cat <<EOF
 Ralph Loop for OpenAI Codex CLI
@@ -71,8 +62,6 @@ Modes:
 
 Work Source:
   Agent reads specs/*.md and picks the highest priority incomplete spec.
-
-YOLO Mode: Uses --dangerously-bypass-approvals-and-sandbox
 
 RLM Mode (optional):
   --rlm-context <file>  Treat a large context file as external environment.
@@ -325,7 +314,6 @@ Run the project's test suite and verify:
 1. Mark the spec/task as complete (add `## Status: COMPLETE` to spec file)
 2. `git add -A`
 3. `git commit` with a descriptive message
-4. `git push`
 
 ---
 
@@ -337,7 +325,7 @@ Check:
 - [ ] Implementation matches all requirements
 - [ ] All tests pass
 - [ ] All acceptance criteria verified
-- [ ] Changes committed and pushed
+- [ ] Changes committed
 - [ ] Spec marked as complete
 
 **If ALL checks pass, output:** `<promise>DONE</promise>`
@@ -412,11 +400,9 @@ When the plan is complete and saved:
 PLANEOF
 fi
 
-# Build Codex flags for exec mode
+# Build Codex flags for exec mode. Approvals and sandboxing follow Codex's
+# normal settings; the loop does not bypass them.
 CODEX_FLAGS="exec"
-if [ "$YOLO_ENABLED" = true ]; then
-    CODEX_FLAGS="$CODEX_FLAGS --dangerously-bypass-approvals-and-sandbox"
-fi
 
 # Get current branch
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
@@ -437,7 +423,6 @@ echo ""
 echo -e "${BLUE}Mode:${NC}     $MODE"
 echo -e "${BLUE}Prompt:${NC}   $PROMPT_FILE"
 echo -e "${BLUE}Branch:${NC}   $CURRENT_BRANCH"
-echo -e "${YELLOW}YOLO:${NC}     $([ "$YOLO_ENABLED" = true ] && echo "ENABLED" || echo "DISABLED")"
 [ -n "$RLM_CONTEXT_FILE" ] && echo -e "${BLUE}RLM:${NC}      $RLM_CONTEXT_FILE"
 [ -n "$SESSION_LOG" ] && echo -e "${BLUE}Log:${NC}      $SESSION_LOG"
 [ $MAX_ITERATIONS -gt 0 ] && echo -e "${BLUE}Max:${NC}      $MAX_ITERATIONS iterations"
@@ -615,13 +600,6 @@ EOF
         RLM_OUTPUT_PATH="${RLM_LAST_MESSAGE_SNAPSHOT:-$RLM_OUTPUT_SNAPSHOT}"
         echo -e "${TIMESTAMP}\t${MODE}\t${ITERATION}\t${RLM_PROMPT_PATH}\t${LOG_FILE}\t${RLM_OUTPUT_PATH}\t${RLM_STATUS}" >> "$RLM_INDEX"
     fi
-
-    # Push changes after each iteration
-    git push origin "$CURRENT_BRANCH" 2>/dev/null || {
-        if git log origin/$CURRENT_BRANCH..HEAD --oneline 2>/dev/null | grep -q .; then
-            git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
-        fi
-    }
 
     # Brief pause between iterations
     echo ""
