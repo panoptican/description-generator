@@ -64,7 +64,19 @@ You need a Cloudflare account, `wrangler` on your PATH, a Gemini API key from [G
 - `npm run worker:dev` runs the Worker locally at `http://localhost:8787`. Put `GEMINI_API_KEY=...` and `FAKE_PAYMENTS=1` in `worker/.dev.vars`; fake tokens such as `dev:tester:free` and `dev:tester:pro` work only when this local-only variable is set. Never set `FAKE_PAYMENTS` in production.
 - Apply the local schema before the first request: `wrangler d1 execute description-generator --config worker/wrangler.jsonc --local --file worker/schema.sql`.
 - `npm run worker:tail` streams live logs. Each generation logs token counts only, never prompt or description text.
-- Redeploy with `npm run worker:deploy` after editing `worker/src/index.ts`.
+- Deploys: see below. Until Workers Builds is connected, redeploy with `npm run worker:deploy` after editing `worker/src/`.
+
+## Deploys
+
+The Worker is set up to deploy from Git with Workers Builds: each push to `main` that touches the Worker redeploys it. **Pending:** the maintainer still has to connect the repository in the Cloudflare dashboard (Workers & Pages → `description-generator` → Settings → Build) with these settings:
+
+- **Git repository:** `panoptican/description-generator`, branch `main`
+- **Root directory:** `/` (the repository root, where `package.json` pins Wrangler)
+- **Build command:** none (Wrangler bundles the Worker during deploy)
+- **Deploy command:** `npm run worker:deploy`
+- **Build watch paths:** include `worker/*`, `package.json`, `package-lock.json`
+
+Workers Builds installs dependencies from `package-lock.json` before running the deploy command. Secrets and D1 are unchanged by a deploy. `npx wrangler deployments list --config worker/wrangler.jsonc` shows what is live and where each deployment came from.
 
 ## Abuse and cost controls
 
