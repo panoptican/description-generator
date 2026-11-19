@@ -101,7 +101,7 @@ Then validate by:
 
 ## Autonomous loop
 
-`./scripts/ralph-loop.sh [iterations]` runs the Ralph Wiggum loop, which picks the highest-priority incomplete spec in `specs/`. The optional local constitution is `.specify/memory/constitution.md`.
+`./scripts/ralph-loop.sh [iterations]` runs the Ralph Wiggum loop, which picks the highest-priority incomplete spec in `specs/`. The optional local constitution is `.specify/memory/constitution.md`. It runs `claude -p` under the project's normal permission settings (it does not skip permission prompts) and commits each finished spec locally; it never pushes, so review and push the results yourself.
 
 ## Commits and pull requests
 

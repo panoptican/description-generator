@@ -30,7 +30,6 @@ set -o pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_DIR/logs"
-CONSTITUTION="$PROJECT_DIR/.specify/memory/constitution.md"
 RLM_DIR="$PROJECT_DIR/rlm"
 RLM_TRACE_DIR="$RLM_DIR/trace"
 RLM_QUERIES_DIR="$RLM_DIR/queries"
@@ -41,7 +40,6 @@ RLM_INDEX="$RLM_DIR/index.tsv"
 MAX_ITERATIONS=0  # 0 = unlimited
 MODE="build"
 CLAUDE_CMD="${CLAUDE_CMD:-claude}"
-YOLO_FLAG="--dangerously-skip-permissions"
 RLM_CONTEXT_FILE=""
 TAIL_LINES=5
 TAIL_RENDERED_LINES=0
@@ -59,14 +57,6 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 mkdir -p "$LOG_DIR"
-
-# Check constitution for YOLO setting
-YOLO_ENABLED=true
-if [[ -f "$CONSTITUTION" ]]; then
-    if grep -q "YOLO Mode.*DISABLED" "$CONSTITUTION" 2>/dev/null; then
-        YOLO_ENABLED=false
-    fi
-fi
 
 show_help() {
     cat <<EOF
@@ -397,7 +387,6 @@ Run the project's test suite and verify:
 1. Mark the spec/task as complete (add `## Status: COMPLETE` to spec file)
 2. `git add -A`
 3. `git commit` with a descriptive message
-4. `git push`
 
 ---
 
@@ -409,7 +398,7 @@ Check:
 - [ ] Implementation matches all requirements
 - [ ] All tests pass
 - [ ] All acceptance criteria verified
-- [ ] Changes committed and pushed
+- [ ] Changes committed
 - [ ] Spec marked as complete
 
 **If ALL checks pass, output:** `<promise>DONE</promise>`
@@ -516,11 +505,9 @@ if [ ! -f "$PROMPT_FILE" ]; then
     exit 1
 fi
 
-# Build Claude flags
+# Build Claude flags. Tool permissions follow the project's normal Claude Code
+# settings; the loop does not skip them.
 CLAUDE_FLAGS="-p"
-if [ "$YOLO_ENABLED" = true ]; then
-    CLAUDE_FLAGS="$CLAUDE_FLAGS $YOLO_FLAG"
-fi
 
 # Get current branch
 CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
@@ -543,7 +530,6 @@ echo ""
 echo -e "${BLUE}Mode:${NC}     $MODE"
 echo -e "${BLUE}Prompt:${NC}   $PROMPT_FILE"
 echo -e "${BLUE}Branch:${NC}   $CURRENT_BRANCH"
-echo -e "${YELLOW}YOLO:${NC}     $([ "$YOLO_ENABLED" = true ] && echo "ENABLED" || echo "DISABLED")"
 [ -n "$RLM_CONTEXT_FILE" ] && echo -e "${BLUE}RLM:${NC}      $RLM_CONTEXT_FILE"
 [ -n "$SESSION_LOG" ] && echo -e "${BLUE}Log:${NC}      $SESSION_LOG"
 [ $MAX_ITERATIONS -gt 0 ] && echo -e "${BLUE}Max:${NC}      $MAX_ITERATIONS iterations"
@@ -667,14 +653,6 @@ while true; do
         cp "$LOG_FILE" "$RLM_OUTPUT_SNAPSHOT"
         echo -e "${TIMESTAMP}\t${MODE}\t${ITERATION}\t${RLM_PROMPT_PATH}\t${LOG_FILE}\t${RLM_OUTPUT_SNAPSHOT}\t${RLM_STATUS}" >> "$RLM_INDEX"
     fi
-
-    # Push changes after each iteration (if any)
-    git push origin "$CURRENT_BRANCH" 2>/dev/null || {
-        if git log origin/$CURRENT_BRANCH..HEAD --oneline 2>/dev/null | grep -q .; then
-            echo -e "${YELLOW}Push failed, creating remote branch...${NC}"
-            git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
-        fi
-    }
 
     # Brief pause between iterations
     echo ""
