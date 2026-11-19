@@ -12,7 +12,7 @@ You need a Cloudflare account, `wrangler` on your PATH, a Gemini API key from [G
    wrangler login
    ```
 
-2. Create the D1 database, then paste its `database_id` into `worker/wrangler.jsonc` in place of `TODO_FROM_WRANGLER_D1_CREATE`:
+2. The published service's D1 database already exists; its `database_id` is in `worker/wrangler.jsonc`. To run your own copy, create a database and replace that `database_id` with the one the command prints:
 
    ```bash
    wrangler d1 create description-generator
