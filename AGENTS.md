@@ -13,7 +13,7 @@ npm run build          # Build plugin with type checking and minification
 npm run watch          # Watch mode for development
 npm test               # Vitest for the plugin and the Worker
 npm run worker:dev     # Run the generation service locally (needs worker/.dev.vars)
-npm run worker:deploy  # Deploy the generation service by hand (until Workers Builds is connected)
+npm run worker:deploy  # Deploy the generation service by hand (Workers Builds deploys pushes to main)
 ```
 
 ## Tech Stack
@@ -115,7 +115,7 @@ Then validate by:
 
 ## Ship
 
-- **Deploys by:** the plugin: the maintainer publishes it to Figma Community by hand from a build of `main`; agents do not publish it. The generation Worker (`worker/`): Workers Builds on push to `main` (root `/`, no build command, deploy command `npm run worker:deploy`), **pending** until Jason connects the repo in the Cloudflare dashboard; until then a merged Worker change is not live until someone runs `npm run worker:deploy`. Settings are in `worker/README.md`.
+- **Deploys by:** the plugin: the maintainer publishes it to Figma Community by hand from a build of `main`; agents do not publish it. The generation Worker (`worker/`): Workers Builds on push to `main` (root `/`, no build command, deploy command `npm run worker:deploy`), connected on 2026-11-20, so a merged Worker change goes live without a manual deploy. Settings are in `worker/README.md`.
 - **Merge:** merge commits.
 - **Check live:** `curl -i https://description-generator.spidleweb.workers.dev/usage` returns `405` ("Use POST.") when the Worker is live; Cloudflare error 1042 means it is not deployed. `npx wrangler deployments list --config worker/wrangler.jsonc` shows the current deployment and its source.
 - **Checks:** `npm test && npm run build`, then the manual Figma pass under Testing. No CI runs them.
